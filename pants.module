@@ -46,6 +46,44 @@ function pants_permission() {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for user_profile_form().
+ */
+function pants_form_user_profile_form_alter(&$form, &$form_state) {
+  if ($form['#user_category'] == 'account' && user_access('change pants status')) {
+    $account = $form_state['user'];
+    $form['pants_status'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Pants'),
+    );
+    $form['pants_status']['pants'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Are you wearing pants?'),
+      '#default_value' => pants_get($account->uid),
+    );
+  }
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function pants_user_presave(&$edit, $account, $category) {
+  if (isset($edit['pants'])) {
+    pants_set($account->uid, $edit['pants']);
+  }
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function pants_user_view($account, $view_mode, $langcode) {
+  $account->content['summary']['pants'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t('Pants status'),
+    '#markup' => pants_status(pants_get($account->uid)),
+  );
+}
+
+/**
  *
  */
 function pants_settings_form() {
