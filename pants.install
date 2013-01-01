@@ -54,7 +54,6 @@ function pants_schema() {
         'not null' => TRUE,
       ),
     ),
-    'primary key' => array('uid'),
   );
 
   return $schema;

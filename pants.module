@@ -46,6 +46,7 @@ function pants_set($uid, $status) {
 
   // Insert or update current row in {pants} table.
   db_merge('pants')
+    ->key(array('uid' => $uid))
     ->fields(array(
       'uid' => $uid,
       'status' => $status,
@@ -53,7 +54,7 @@ function pants_set($uid, $status) {
     ->execute();
 
   // Also insert new record into {pants_history}.
-  db_merge('pants')
+  db_insert('pants_history')
     ->fields(array(
       'uid' => $uid,
       'status' => $status,

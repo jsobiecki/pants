@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * @file
+ * Tests for pants.module.
+ */
+
+/**
+ * Tests functionality of Pants module.
+ */
+class PantsCRUDTestCase extends DrupalWebTestCase {
+
+  /**
+   * Standard test user.
+   */
+  protected $web_user;
+
+  /**
+   * Another standard test user.
+   */
+  protected $web_user2;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'CRUD on your pants',
+      'description' => "Ensures that you can set and get a user's pants status.",
+      'group' => 'Pants',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('pants');
+
+    $this->web_user = $this->drupalCreateUser();
+    $this->web_user2 = $this->drupalCreateUser();
+  }
+
+  /**
+   * Ensures basic CRUD functions work.
+   */
+  function testPantsCRUD() {
+    // User starts with pants off... of course!
+    $this->assertEqual(0, pants_get($this->web_user->uid));
+
+    // Toggle pants setting and check it.
+    pants_change($this->web_user->uid);
+    $this->assertEqual(1, pants_get($this->web_user->uid));
+
+    // Toggle it back and check it again.
+    pants_change($this->web_user->uid);
+    $this->assertEqual(0, pants_get($this->web_user->uid));
+
+    // Explicitly set pants status and verify.
+    pants_set($this->web_user->uid, 1);
+    $this->assertEqual(1, pants_get($this->web_user->uid));
+
+    // Set a pants status on a new user without pre-existing status.
+    pants_set($this->web_user2->uid, 1);
+    $this->assertEqual(1, pants_get($this->web_user2->uid));
+  }
+
+}
