@@ -58,7 +58,7 @@ function pants_form_user_profile_form_alter(&$form, &$form_state) {
     $form['pants_status']['pants'] = array(
       '#type' => 'checkbox',
       '#title' => t('Are you wearing pants?'),
-      '#default_value' => pants_get($account->uid),
+      '#default_value' => !empty($account->pants) ? 1 : 0,
     );
   }
 }
@@ -73,14 +73,51 @@ function pants_user_presave(&$edit, $account, $category) {
 }
 
 /**
+ * Implements hook_user_load().
+ */
+function pants_user_load($users) {
+  $result = db_query('SELECT uid, status FROM {pants} WHERE uid IN (:uids)', array(
+    ':uids' => array_keys($users),
+  ));
+  foreach ($result as $record) {
+    $users[$record->uid]->pants = $record->status;
+  }
+}
+
+/**
  * Implements hook_user_view().
  */
 function pants_user_view($account, $view_mode, $langcode) {
   $account->content['summary']['pants'] = array(
     '#type' => 'user_profile_item',
     '#title' => t('Pants status'),
-    '#markup' => pants_status(pants_get($account->uid)),
+    '#markup' => theme('pants_status', array('account' => $account)),
   );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pants_theme() {
+  return array(
+    'pants_status' => array(
+      'variables' => array('account' => NULL),
+    ),
+  );
+}
+
+/**
+ * Returns HTML for user's pants status.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - account: A user object whose pants status should be displayed.
+ *
+ * @ingroup themeable
+ */
+function theme_pants_status($variables) {
+  $account = $variables['account'];
+  return !empty($account->pants) ? t('On') : t('Off');
 }
 
 /**
