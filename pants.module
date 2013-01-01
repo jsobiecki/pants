@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ *
+ */
+
+/**
+ * Toggles a user's pants setting to the opposite of what it is now.
+ *
+ * @param int $uid
+ *   A user's {users}.uid.
+ */
+function pants_change($uid) {
+  $status = 1 - pants_get($uid);
+  pants_set($uid, $status);
+}
+
+/**
+ * Returns a user's current pants status.
+ * 
+ * @param int $uid
+ *   A user's {users}.uid.
+ *
+ * @return int $status
+ *   The user's pants status (1 or 0).
+ */
+function pants_get($uid) {
+  $status = db_query('SELECT status FROM {pants} WHERE uid = :uid', array(
+    ':uid' => $uid,
+  ))->fetchField();
+  return $status;
+}
+
+/**
+ * Changes the value of a user's pants status.
+ *
+ * @param int $uid
+ *   A user's {users}.uid.
+ *
+ * @return int $status
+ *   A 1 or 0 with which to modify the user's pants status.
+ */
+function pants_set($uid, $status) {
+  global $user;
+
+  // Insert or update current row in {pants} table.
+  db_merge('pants')
+    ->fields(array(
+      'uid' => $uid,
+      'status' => $status,
+    ))
+    ->execute();
+
+  // Also insert new record into {pants_history}.
+  db_merge('pants')
+    ->fields(array(
+      'uid' => $uid,
+      'status' => $status,
+      'changed' => REQUEST_TIME,
+      'changed_by' => $user->uid,
+    ))
+    ->execute();
+}
+
+/**
+ * Returns text version of a given status.
+ *
+ * @param int $status
+ *   A 1 or a 0 for a given pants status.
+ */
+function pants_status($status) {
+  return ($status) ? t('On') : t('Off');
+}
