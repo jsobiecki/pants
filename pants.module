@@ -123,7 +123,7 @@ function pants_theme() {
  */
 function theme_pants_status($variables) {
   $account = $variables['account'];
-  return !empty($account->pants) ? t('On') : t('Off');
+  return pants_get($account->uid) ? t('On') : t('Off');
 }
 
 /**
@@ -132,7 +132,15 @@ function theme_pants_status($variables) {
  * @ingroup themeable
  */
 function theme_pants_your_block($variables) {
-  return 'your block';
+  global $user;
+
+  $output  = '<div class="pants-status">';
+  $output .= theme('pants_status', array('account' => $user));
+  $output .= '</div>';
+
+  $output .= l(t('Change'), "pants/change/{$user->uid}", array('attributes' => array('id' => 'pants')));
+
+  return $output;
 }
 
 /**
@@ -150,7 +158,7 @@ function theme_pants_recent_block($variables) {
 function pants_block_info() {
   $blocks['your_pants'] = array(
     'info' => t('Your pants'),
-    'cache' => DRUPAL_CACHE_PER_USER,
+    'cache' => DRUPAL_CACHE_NONE,
   );
   $blocks['recent_pants'] = array(
     'info' => t('Recent pants'),
@@ -168,9 +176,17 @@ function pants_block_view($delta = '') {
 
   switch ($delta) {
     case 'your_pants':
+      global $user;
+
       $block['subject'] = t('Your pants');
       $block['content'] = array(
         '#theme' => 'pants_your_block',
+        '#attached' => array(
+          'js' => array(
+            array('data' => drupal_get_path('module', 'pants') . '/pants.js', 'type' => 'file'),
+            array('data' => array('uid' => $user->uid), 'type' => 'setting'),
+          ),
+        ),
       );
       break;
     case 'recent_pants':
@@ -204,6 +220,8 @@ function pants_change($account) {
   $uid = $account->uid;
   $status = 1 - pants_get($uid);
   pants_set($uid, $status);
+  print theme('pants_status', array('account' => $account));
+  exit;
 }
 
 /**
@@ -254,12 +272,3 @@ function pants_set($uid, $status) {
     ->execute();
 }
 
-/**
- * Returns text version of a given status.
- *
- * @param int $status
- *   A 1 or a 0 for a given pants status.
- */
-function pants_status($status) {
-  return ($status) ? t('On') : t('Off');
-}
