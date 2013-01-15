@@ -22,7 +22,7 @@ function pants_menu() {
   $items['admin/config/people/pants'] = array(
     'title' => 'Pants',
     'description' => 'Administer pants.',
-    'page callback' => 'pants_settings_form',
+    'page callback' => 'pants_settings',
     'access callback' => 'user_access', // Defaut.
     'access arguments' => array('administer pants'),
     'type' => MENU_NORMAL_ITEM, // Default.
@@ -103,6 +103,12 @@ function pants_theme() {
     'pants_status' => array(
       'variables' => array('account' => NULL),
     ),
+    'pants_your_block' => array(
+      'variables' => array(),
+    ),
+    'pants_recent_block' => array(
+      'variables' => array('statuses => NULL'),
+    ),
   );
 }
 
@@ -121,9 +127,68 @@ function theme_pants_status($variables) {
 }
 
 /**
+ * Returns HTML for "Your pants" block.
  *
+ * @ingroup themeable
  */
-function pants_settings_form() {
+function theme_pants_your_block($variables) {
+  return 'your block';
+}
+
+/**
+ * Returns HTML for "Recent pants" block.
+ *
+ * @ingroup themeable
+ */
+function theme_pants_recent_block($variables) {
+  return 'recent block';
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function pants_block_info() {
+  $blocks['your_pants'] = array(
+    'info' => t('Your pants'),
+    'cache' => DRUPAL_CACHE_PER_USER,
+  );
+  $blocks['recent_pants'] = array(
+    'info' => t('Recent pants'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function pants_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'your_pants':
+      $block['subject'] = t('Your pants');
+      $block['content'] = array(
+        '#theme' => 'pants_your_block',
+      );
+      break;
+    case 'recent_pants':
+      $block['subject'] = t('Recent pants');
+      $block['content'] = array(
+        '#theme' => 'pants_recent_block',
+        '#pants' => variable_get('pants_recent_block_count', 10),
+      );
+      break;
+  }
+
+  return $block;
+}
+
+/**
+ * Form builder; The pants settings form.
+ */
+function pants_settings() {
   return 'Oh hai.';
 }
 
