@@ -109,7 +109,7 @@ function pants_theme() {
     'pants_status' => array(
       'variables' => array('account' => NULL),
     ),
-    'pants_your_block' => array(
+    'pants_change_block' => array(
       'variables' => array(),
     ),
     'pants_recent_block' => array(
@@ -133,11 +133,11 @@ function theme_pants_status($variables) {
 }
 
 /**
- * Returns HTML for "Your pants" block.
+ * Returns HTML for "Change pants" block.
  *
  * @ingroup themeable
  */
-function theme_pants_your_block($variables) {
+function theme_pants_change_block($variables) {
   global $user;
 
   $output  = '<div class="pants-status">';
@@ -179,8 +179,8 @@ function theme_pants_recent_block($variables) {
  * Implements hook_block_info().
  */
 function pants_block_info() {
-  $blocks['your_pants'] = array(
-    'info' => t('Your pants'),
+  $blocks['change_pants'] = array(
+    'info' => t('Change pants'),
     'cache' => DRUPAL_NO_CACHE,
   );
   $blocks['recent_pants'] = array(
@@ -198,12 +198,12 @@ function pants_block_view($delta = '') {
   $block = array();
 
   switch ($delta) {
-    case 'your_pants':
+    case 'change_pants':
       global $user;
 
-      $block['subject'] = t('Your pants');
+      $block['subject'] = t('Change pants');
       $block['content'] = array(
-        '#theme' => 'pants_your_block',
+        '#theme' => 'pants_change_block',
         '#attached' => array(
           'js' => array(
             array('data' => drupal_get_path('module', 'pants') . '/pants.js', 'type' => 'file'),

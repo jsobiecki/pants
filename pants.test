@@ -134,10 +134,10 @@ class PantsUITestCase extends DrupalWebTestCase {
     // @todo: Ideally this would not depend on Bartik theme.
 
     // Turn on the pants blocks.
-    $this->drupalPost('admin/structure/block/manage/pants/your_pants/configure', array('regions[bartik]' => 'sidebar_second'), t('Save block'));
+    $this->drupalPost('admin/structure/block/manage/pants/change_pants/configure', array('regions[bartik]' => 'sidebar_second'), t('Save block'));
     $this->drupalPost('admin/structure/block/manage/pants/recent_pants/configure', array('regions[bartik]' => 'sidebar_second'), t('Save block'));
 
-    // Change pants status from the "Your pants" block.
+    // Change pants status from the "Change pants" block.
     $this->clickLink(t('Change'));
 
     // Verify it was changed in the "Recent pants" block.
