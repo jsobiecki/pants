@@ -149,7 +149,24 @@ function theme_pants_your_block($variables) {
  * @ingroup themeable
  */
 function theme_pants_recent_block($variables) {
-  return 'recent block';
+  $items = array();
+
+  $statuses = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, variable_get('pants_recent_block_count', 10))->fetchAll();
+
+  foreach ($statuses as $pants) {
+    $username = theme('username', array('account' => $pants));
+    $time = format_interval(time() - $pants->changed);
+    if ($pants->status) {
+      $items[] = t('!username put pants on @time ago', array('!username' => $username, '@time' => $time));
+    }
+    else {
+      $items[] = t('!username took pants off @time ago', array('!username' => $username, '@time' => $time));
+    }
+  }
+
+  $output = theme('item_list', array('items' => $items));
+
+  return $output;
 }
 
 /**
@@ -158,7 +175,7 @@ function theme_pants_recent_block($variables) {
 function pants_block_info() {
   $blocks['your_pants'] = array(
     'info' => t('Your pants'),
-    'cache' => DRUPAL_CACHE_NONE,
+    'cache' => DRUPAL_NO_CACHE,
   );
   $blocks['recent_pants'] = array(
     'info' => t('Recent pants'),
