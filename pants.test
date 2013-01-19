@@ -6,7 +6,7 @@
  */
 
 /**
- * Tests functionality of Pants module.
+ * Tests basic functionality of Pants module.
  */
 class PantsCRUDTestCase extends DrupalWebTestCase {
 
@@ -58,5 +58,72 @@ class PantsCRUDTestCase extends DrupalWebTestCase {
     pants_set($this->web_user2->uid, 1);
     $this->assertEqual(1, pants_get($this->web_user2->uid));
   }
+}
 
+/**
+ * Tests extended functionality of Pants module.
+ */
+class PantsUITestCase extends DrupalWebTestCase {
+
+  /**
+   * Standard test user.
+   */
+  protected $web_user;
+
+  /**
+   * Another standard test user.
+   */
+  protected $web_user2;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'UI on your pants',
+      'description' => "Ensures that you can set and get a user's pants status through the UI.",
+      'group' => 'Pants',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('pants');
+
+    $this->web_user = $this->drupalCreateUser(array('change pants status'));
+    $this->web_user2 = $this->drupalCreateUser();
+  }
+
+  /**
+   * Ensures UI functionality is working.
+   */
+  function testPantsUI() {
+    // @todo: The assertions in this test are pretty janky. :P They only work
+    // because the pants blocks are not enabled. I should probably learn xpath
+    // someday.
+
+    // Log in as web_user and check pants status.
+    $this->drupalLogin($this->web_user);
+    $uid = $this->web_user->uid;
+    $this->drupalGet("user/$uid");
+    $this->assertText('Off');
+
+    // Change pants status and check it again.
+    $edit = array('pants' => 1);
+    $this->drupalPost("user/$uid/edit", $edit, t('Save'));
+    $this->drupalGet("user/$uid");
+    $this->assertText('On');
+
+    // Ensure that unprivileged user cannot change pants.
+    $this->drupalLogin($this->web_user2);
+    $uid = $this->web_user2->uid;
+    $this->drupalGet("user/$uid");
+    $this->assertText('Off');
+
+    $this->drupalGet("user/$uid/edit");
+    $this->assertNoText('Pants');
+  }
+
+  /**
+   * Test pants block functionality.
+   */
+  function testPantsBlocks() {
+
+  }
 }
