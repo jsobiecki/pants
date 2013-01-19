@@ -75,6 +75,11 @@ class PantsUITestCase extends DrupalWebTestCase {
    */
   protected $web_user2;
 
+  /**
+   * An admin user.
+   */
+  protected $admin_user;
+
   public static function getInfo() {
     return array(
       'name' => 'UI on your pants',
@@ -86,8 +91,9 @@ class PantsUITestCase extends DrupalWebTestCase {
   function setUp() {
     parent::setUp('pants');
 
-    $this->web_user = $this->drupalCreateUser(array('change pants status'));
-    $this->web_user2 = $this->drupalCreateUser();
+    $this->web_user   = $this->drupalCreateUser(array('change pants status'));
+    $this->web_user2  = $this->drupalCreateUser();
+    $this->admin_user = $this->drupalCreateUser(array('administer blocks', 'administer pants'));
   }
 
   /**
@@ -124,6 +130,23 @@ class PantsUITestCase extends DrupalWebTestCase {
    * Test pants block functionality.
    */
   function testPantsBlocks() {
+    $this->drupalLogin($this->admin_user);
+    // @todo: Ideally this would not depend on Bartik theme.
 
+    // Turn on the pants blocks.
+    $this->drupalPost('admin/structure/block/manage/pants/your_pants/configure', array('regions[bartik]' => 'sidebar_second'), t('Save block'));
+    $this->drupalPost('admin/structure/block/manage/pants/recent_pants/configure', array('regions[bartik]' => 'sidebar_second'), t('Save block'));
+
+    // Change pants status from the "Your pants" block.
+    $this->clickLink(t('Change'));
+
+    // Verify it was changed in the "Recent pants" block.
+    $this->drupalGet('');
+    $this->assertText('put pants on');
+
+    // Repeat for pants off.
+    $this->clickLink(t('Change'));
+    $this->drupalGet('');
+    $this->assertText('took pants off');
   }
 }

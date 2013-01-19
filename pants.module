@@ -15,8 +15,7 @@ function pants_menu() {
     'title' => 'Change pants',
     'page callback' => 'pants_change',
     'page arguments' => array(2),
-    'access callback' => 'user_access', // Default.
-    'access arguments' => array('change pants status'),
+    'access callback' => 'pants_change_access', // Default.
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/people/pants'] = array(
@@ -29,6 +28,13 @@ function pants_menu() {
   );
 
   return $items;
+}
+
+/**
+ * Pants change menu access callback.
+ */
+function pants_change_access() {
+  return user_access('change pants status') || user_access('administer pants');
 }
 
 /**
