@@ -228,6 +228,8 @@ function pants_block_view($delta = '') {
  * Form builder; The pants settings form.
  */
 function pants_settings() {
+  // @todo: Come up with some clever settings that can help show off CMI and possibly
+  // the plugin system. "Pants type"?
   return 'Oh hai.';
 }
 
