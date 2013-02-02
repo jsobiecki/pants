@@ -21,7 +21,8 @@ function pants_menu() {
   $items['admin/config/people/pants'] = array(
     'title' => 'Pants',
     'description' => 'Administer pants.',
-    'page callback' => 'pants_settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pants_settings'),
     'access callback' => 'user_access', // Defaut.
     'access arguments' => array('administer pants'),
     'type' => MENU_NORMAL_ITEM, // Default.
@@ -97,7 +98,7 @@ function pants_user_view($account, $view_mode, $langcode) {
   $account->content['summary']['pants'] = array(
     '#type' => 'user_profile_item',
     '#title' => t('Pants status'),
-    '#markup' => theme('pants_status', array('account' => $account)),
+    '#markup' => theme('pants_status', array('account' => $account, 'type' => variable_get('pants_type', 'none'))),
   );
 }
 
@@ -107,7 +108,7 @@ function pants_user_view($account, $view_mode, $langcode) {
 function pants_theme() {
   return array(
     'pants_status' => array(
-      'variables' => array('account' => NULL),
+      'variables' => array('account' => NULL, 'type' => 'none'),
     ),
     'pants_change_block' => array(
       'variables' => array(),
@@ -124,12 +125,21 @@ function pants_theme() {
  * @param array $variables
  *   An associative array containing:
  *   - account: A user object whose pants status should be displayed.
+ *   - type: Type of pants to display (defaults to none).
  *
  * @ingroup themeable
  */
 function theme_pants_status($variables) {
   $account = $variables['account'];
-  return pants_get($account->uid) ? t('On') : t('Off');
+  $type = $variables['type'];
+  switch ($type) {
+    case 'none':
+      return pants_get($account->uid) ? t('On') : t('Off');
+    case 'mchammer':
+      return pants_get($account->uid) ? theme('image', array('path' => 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg')) : t('Off');
+    case 'bellbottoms':
+      return pants_get($account->uid) ? theme('image', array('path' => 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg')) : t('Off');  
+  }
 }
 
 /**
@@ -228,9 +238,19 @@ function pants_block_view($delta = '') {
  * Form builder; The pants settings form.
  */
 function pants_settings() {
-  // @todo: Come up with some clever settings that can help show off CMI and possibly
-  // the plugin system. "Pants type"?
-  return 'Oh hai.';
+  $form['pants_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Pants type'),
+    '#options' => array(
+      '' => t('None (just show on/off status)'),
+      'bellbottoms' => t('Bellbottoms'),
+      'mchammer' => t('MC Hammer'),
+    ),
+    '#default_value' => variable_get('pants_type', ''),
+    '#description' => t('Choose pants type to show on the user profile.'),
+  );
+
+  return system_settings_form($form);
 }
 
 ///// CRUD FUNCTIONS ////
