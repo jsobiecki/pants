@@ -98,7 +98,7 @@ function pants_user_view($account, $view_mode, $langcode) {
   $account->content['summary']['pants'] = array(
     '#type' => 'user_profile_item',
     '#title' => t('Pants status'),
-    '#markup' => theme('pants_status', array('account' => $account, 'type' => variable_get('pants_type', 'none'))),
+    '#markup' => theme('pants_status', array('account' => $account, 'type' => variable_get('pants_type', ''))),
   );
 }
 
@@ -108,7 +108,7 @@ function pants_user_view($account, $view_mode, $langcode) {
 function pants_theme() {
   return array(
     'pants_status' => array(
-      'variables' => array('account' => NULL, 'type' => 'none'),
+      'variables' => array('account' => NULL, 'type' => ''),
     ),
     'pants_change_block' => array(
       'variables' => array(),
@@ -132,8 +132,9 @@ function pants_theme() {
 function theme_pants_status($variables) {
   $account = $variables['account'];
   $type = $variables['type'];
+
   switch ($type) {
-    case 'none':
+    case '':
       return pants_get($account->uid) ? t('On') : t('Off');
     case 'mchammer':
       return pants_get($account->uid) ? theme('image', array('path' => 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg')) : t('Off');
