@@ -2,3 +2,5 @@ name = Pants
 description = Tracks pants status for users.
 core = 7.x
 files[] = pants.test
+dependencies[] = user
+config = admin/config/people/pants
