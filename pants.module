@@ -251,13 +251,6 @@ function pants_settings() {
     '#description' => t('Choose pants type to show on the user profile.'),
   );
 
-  $form['pants_key'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Pants API Key'),
-    '#default_value' => variable_get('pants_key', ''),
-    '#description' => t("This field doesn't actually do anything; just an example."),
-  );
-
   return system_settings_form($form);
 }
 
