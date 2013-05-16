@@ -218,6 +218,7 @@ function pants_theme() {
   return array(
     'pants_status' => array(
       'variables' => array('account' => NULL, 'type' => ''),
+      'template' => 'pants-status',
     ),
     'pants_history_item' => array(
       'variables' => array('item' => NULL),
@@ -226,7 +227,7 @@ function pants_theme() {
 }
 
 /**
- * Preprocesses variables for theme_pants_status().
+ * Preprocesses variables for pants-status.tpl.php.
  *
  * @param array $variables
  *   An associative array containing:
@@ -234,38 +235,29 @@ function pants_theme() {
  *   - type: Type of pants to display (defaults to none).
  */
 function template_preprocess_pants_status(&$variables) {
-  $variables['status'] = pants_get($variables['account']->uid);
+  $status = pants_get($variables['account']->uid);
   switch ($variables['type']) {
     case 'mchammer':
-      $variables['src'] = 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg';
+      $image = 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg';
       break;
     case 'bellbottoms':
-      $variables['src'] = 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg';
+      $image = 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg';
       break;
+    default:
+      $image = NULL;
   }
-}
 
-/**
- * Returns HTML for user's pants status.
- *
- * @param array $variables
- *   An associative array containing:
- *   - status: The user's pants status.
- *   - src: A path to an image of pants.
- *
- * @ingroup themeable
- */
-function theme_pants_status($variables) {
-  if (!$variables['status']) {
-    $output = t('Off');
-  }
-  elseif (isset($variables['src'])) {
-    $output = theme('image', array('path' => $variables['src']));
+  if ($status && $image) {
+    $variables['content'] = array(
+      '#theme' => 'image',
+      '#path' => $image,
+    );
   }
   else {
-    $output = t('On');
+    $variables['content'] = array(
+      '#markup' => $status ? t('On') : t('Off'),
+    );
   }
-  return $output;
 }
 
 /**
