@@ -113,8 +113,8 @@ function pants_theme() {
     'pants_change_block' => array(
       'variables' => array(),
     ),
-    'pants_recent_block' => array(
-      'variables' => array('statuses => NULL'),
+    'pants_history_item' => array(
+      'variables' => array('item' => NULL),
     ),
   );
 }
@@ -161,28 +161,20 @@ function theme_pants_change_block($variables) {
 }
 
 /**
- * Returns HTML for "Recent pants" block.
+ * Returns HTML for a history item in the "Recent pants" block.
  *
  * @ingroup themeable
  */
-function theme_pants_recent_block($variables) {
-  $items = array();
-
-  $statuses = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, variable_get('pants_recent_block_count', 10))->fetchAll();
-
-  foreach ($statuses as $pants) {
-    $username = theme('username', array('account' => $pants));
-    $time = format_interval(time() - $pants->changed);
-    if ($pants->status) {
-      $items[] = t('!username put pants on @time ago', array('!username' => $username, '@time' => $time));
-    }
-    else {
-      $items[] = t('!username took pants off @time ago', array('!username' => $username, '@time' => $time));
-    }
+function theme_pants_history_item($variables) {
+  $item = $variables['item'];
+  $username = theme('username', array('account' => $item));
+  $time = format_interval(time() - $item->changed);
+  if ($item->status) {
+    $output = t('!username put pants on @time ago', array('!username' => $username, '@time' => $time));
   }
-
-  $output = theme('item_list', array('items' => $items));
-
+  else {
+    $output = t('!username took pants off @time ago', array('!username' => $username, '@time' => $time));
+  }
   return $output;
 }
 
@@ -224,10 +216,17 @@ function pants_block_view($delta = '') {
       );
       break;
     case 'recent_pants':
+      $items = array();
+      $count = variable_get('pants_recent_block_count', 10);
+      $result = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, $count)->fetchAll();
+      foreach ($result as $item) {
+        $items[] = theme('pants_history_item', array('item' => $item));
+      }
+
       $block['subject'] = t('Recent pants');
       $block['content'] = array(
-        '#theme' => 'pants_recent_block',
-        '#pants' => variable_get('pants_recent_block_count', 10),
+        '#theme' => 'item_list__pants_recent_block',
+        '#items' => $items,
       );
       break;
   }
