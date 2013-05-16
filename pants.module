@@ -28,7 +28,7 @@ function pants_change_access() {
   return user_access('change pants status') || user_access('administer pants');
 }
 
-///// PAGES /////
+///// MENU /////
 
 /**
  * Implements hook_menu().
@@ -41,6 +41,7 @@ function pants_menu() {
     'access callback' => 'pants_change_access', // Default.
     'delivery callback' => 'ajax_deliver',
     'type' => MENU_CALLBACK,
+    'file' => 'pants.pages.inc',
   );
   $items['admin/config/people/pants'] = array(
     'title' => 'Pants',
@@ -50,44 +51,10 @@ function pants_menu() {
     'access callback' => 'user_access', // Defaut.
     'access arguments' => array('administer pants'),
     'type' => MENU_NORMAL_ITEM, // Default.
+    'file' => 'pants.admin.inc',
   );
 
   return $items;
-}
-
-/**
- * Page callback for pants/change/%user.
- *
- * @param stdClass $user
- *   A user object.
- */
-function pants_change($account) {
-  $uid = $account->uid;
-  $status = 1 - pants_get($uid);
-  pants_set($uid, $status);
-  return array(
-    '#theme' => 'pants_status',
-    '#account' => $account,
-  );
-}
-
-/**
- * Form builder; The pants settings form.
- */
-function pants_settings() {
-  $form['pants_type'] = array(
-    '#type' => 'radios',
-    '#title' => t('Pants type'),
-    '#options' => array(
-      '' => t('None (just show on/off status)'),
-      'bellbottoms' => t('Bellbottoms'),
-      'mchammer' => t('MC Hammer'),
-    ),
-    '#default_value' => variable_get('pants_type', ''),
-    '#description' => t('Choose pants type to show on the user profile.'),
-  );
-
-  return system_settings_form($form);
 }
 
 ///// BLOCKS /////
