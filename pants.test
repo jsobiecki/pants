@@ -132,3 +132,51 @@ class PantsUITestCase extends DrupalWebTestCase {
     $this->assertText('took pants off');
   }
 }
+
+/**
+ * Tests extended functionality of Pants module.
+ */
+class PantsAJAXTestCase extends AJAXTestCase {
+
+  /**
+   * Standard test user.
+   */
+  protected $web_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'AJAX on your pants',
+      'description' => "Ensures that you can set and get a user's pants status through AJAX.",
+      'group' => 'Pants',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('pants');
+
+    $this->web_user   = $this->drupalCreateUser(array('change pants status'));
+  }
+
+  /**
+   * Ensures AJAX functionality is working.
+   */
+  function testPantsAJAX() {
+    $this->drupalLogin($this->web_user);
+
+    // Send an AJAX request and verify the expected command is returned.
+    $commands = $this->drupalGetAJAX('pants/change/' . $this->web_user->uid);
+    $expected_command = array(
+      'command' => 'insert',
+      'data' => '<blink>On</blink>',
+    );
+    $this->assertCommand($commands, $expected_command, 'Expected AJAX command returned in response to putting pants on.');
+
+    // Repeat for pants off.
+    $commands = $this->drupalGetAJAX('pants/change/' . $this->web_user->uid);
+    $expected_command = array(
+      'command' => 'insert',
+      'data' => '<blink>Off</blink>',
+    );
+    $this->assertCommand($commands, $expected_command, 'Expected AJAX command returned in response to taking pants off.');
+  }
+}
