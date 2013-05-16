@@ -16,6 +16,7 @@ function pants_menu() {
     'page callback' => 'pants_change',
     'page arguments' => array(2),
     'access callback' => 'pants_change_access', // Default.
+    'delivery callback' => 'ajax_deliver',
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/people/pants'] = array(
@@ -110,9 +111,6 @@ function pants_theme() {
     'pants_status' => array(
       'variables' => array('account' => NULL, 'type' => ''),
     ),
-    'pants_change_block' => array(
-      'variables' => array(),
-    ),
     'pants_history_item' => array(
       'variables' => array('item' => NULL),
     ),
@@ -141,23 +139,6 @@ function theme_pants_status($variables) {
     case 'bellbottoms':
       return pants_get($account->uid) ? theme('image', array('path' => 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg')) : t('Off');  
   }
-}
-
-/**
- * Returns HTML for "Change pants" block.
- *
- * @ingroup themeable
- */
-function theme_pants_change_block($variables) {
-  global $user;
-
-  $output  = '<div class="pants-status">';
-  $output .= theme('pants_status', array('account' => $user));
-  $output .= '</div>';
-
-  $output .= l(t('Change'), "pants/change/{$user->uid}", array('attributes' => array('id' => 'pants')));
-
-  return $output;
 }
 
 /**
@@ -206,11 +187,20 @@ function pants_block_view($delta = '') {
 
       $block['subject'] = t('Change pants');
       $block['content'] = array(
-        '#theme' => 'pants_change_block',
-        '#attached' => array(
-          'js' => array(
-            array('data' => drupal_get_path('module', 'pants') . '/pants.js', 'type' => 'file'),
-            array('data' => array('uid' => $user->uid), 'type' => 'setting'),
+        'status' => array(
+          '#theme' => 'pants_status',
+          '#account' => $user,
+          '#prefix' => '<div id="pants-change-pants-status">',
+          '#suffix' => '</div>',
+        ),
+        'change_link' => array(
+          '#type' => 'link',
+          '#title' => t('Change'),
+          '#href' => "pants/change/{$user->uid}",
+          '#ajax' => array(
+            'wrapper' => 'pants-change-pants-status',
+            'method' => 'html',
+            'effect' => 'fade',
           ),
         ),
       );
@@ -235,6 +225,22 @@ function pants_block_view($delta = '') {
 }
 
 /**
+ * Page callback for pants/change/%user.
+ *
+ * @param stdClass $user
+ *   A user object.
+ */
+function pants_change($account) {
+  $uid = $account->uid;
+  $status = 1 - pants_get($uid);
+  pants_set($uid, $status);
+  return array(
+    '#theme' => 'pants_status',
+    '#account' => $account,
+  );
+}
+
+/**
  * Form builder; The pants settings form.
  */
 function pants_settings() {
@@ -254,20 +260,6 @@ function pants_settings() {
 }
 
 ///// CRUD FUNCTIONS ////
-
-/**
- * Toggles a user's pants setting to the opposite of what it is now.
- *
- * @param stdClass $user
- *   A user object.
- */
-function pants_change($account) {
-  $uid = $account->uid;
-  $status = 1 - pants_get($uid);
-  pants_set($uid, $status);
-  print theme('pants_status', array('account' => $account));
-  exit;
-}
 
 /**
  * Returns a user's current pants status.
