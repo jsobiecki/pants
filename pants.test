@@ -43,7 +43,45 @@ class PantsCRUDTestCase extends DrupalWebTestCase {
 }
 
 /**
- * Tests extended functionality of Pants module.
+ * Tests configuration of Pants module.
+ */
+class PantsConfigurationTestCase extends DrupalWebTestCase {
+
+  /**
+   * Admin user.
+   */
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Configuration of pants',
+      'description' => "Ensures that an administrator can configure the type of pants used on the site.",
+      'group' => 'Pants',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('pants');
+
+    $this->admin_user   = $this->drupalCreateUser(array('administer pants'));
+  }
+
+  /**
+   * Ensures pants_type setting can be changed.
+   */
+  function testPantsConfiguration() {
+    $this->drupalLogin($this->admin_user);
+
+    $this->drupalGet('admin/config/people/pants');
+    $this->assertFieldByName('pants_type', '');
+
+    $this->drupalPost(NULL, array('pants_type' => 'bellbottoms'), t('Save configuration'));
+    $this->assertFieldByName('pants_type', 'bellbottoms');
+  }
+}
+
+/**
+ * Tests UI of Pants module.
  */
 class PantsUITestCase extends DrupalWebTestCase {
 
@@ -134,7 +172,7 @@ class PantsUITestCase extends DrupalWebTestCase {
 }
 
 /**
- * Tests extended functionality of Pants module.
+ * Tests AJAX functionality of Pants module.
  */
 class PantsAJAXTestCase extends AJAXTestCase {
 
