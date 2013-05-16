@@ -118,27 +118,46 @@ function pants_theme() {
 }
 
 /**
- * Returns HTML for user's pants status.
+ * Preprocesses variables for theme_pants_status().
  *
  * @param array $variables
  *   An associative array containing:
  *   - account: A user object whose pants status should be displayed.
  *   - type: Type of pants to display (defaults to none).
+ */
+function template_preprocess_pants_status(&$variables) {
+  $variables['status'] = pants_get($variables['account']->uid);
+  switch ($variables['type']) {
+    case 'mchammer':
+      $variables['src'] = 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg';
+      break;
+    case 'bellbottoms':
+      $variables['src'] = 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg';
+      break;
+  }
+}
+
+/**
+ * Returns HTML for user's pants status.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - status: The user's pants status.
+ *   - src: A path to an image of pants.
  *
  * @ingroup themeable
  */
 function theme_pants_status($variables) {
-  $account = $variables['account'];
-  $type = $variables['type'];
-
-  switch ($type) {
-    case '':
-      return pants_get($account->uid) ? t('On') : t('Off');
-    case 'mchammer':
-      return pants_get($account->uid) ? theme('image', array('path' => 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg')) : t('Off');
-    case 'bellbottoms':
-      return pants_get($account->uid) ? theme('image', array('path' => 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg')) : t('Off');  
+  if (!$variables['status']) {
+    $output = t('Off');
   }
+  elseif (isset($variables['src'])) {
+    $output = theme('image', array('path' => $variables['src']));
+  }
+  else {
+    $output = t('On');
+  }
+  return $output;
 }
 
 /**
