@@ -5,7 +5,30 @@
  * Allows users to take their pants on and off.
  */
 
-///// HOOKS /////
+///// PERMISSIONS AND ACCESS /////
+
+/**
+ * Implements hook_permission().
+ */
+function pants_permission() {
+  return array(
+    'change pants status' => array(
+      'title' => t('Change pants status'),
+     ),
+    'administer pants' => array(
+      'title' => t('Administer pants'),
+    ),
+  );
+}
+
+/**
+ * Access callback: Checks permission to change pants status.
+ */
+function pants_change_access() {
+  return user_access('change pants status') || user_access('administer pants');
+}
+
+///// PAGES /////
 
 /**
  * Implements hook_menu().
@@ -33,25 +56,108 @@ function pants_menu() {
 }
 
 /**
- * Pants change menu access callback.
+ * Page callback for pants/change/%user.
+ *
+ * @param stdClass $user
+ *   A user object.
  */
-function pants_change_access() {
-  return user_access('change pants status') || user_access('administer pants');
+function pants_change($account) {
+  $uid = $account->uid;
+  $status = 1 - pants_get($uid);
+  pants_set($uid, $status);
+  return array(
+    '#theme' => 'pants_status',
+    '#account' => $account,
+  );
 }
 
 /**
- * Implements hook_permission().
+ * Form builder; The pants settings form.
  */
-function pants_permission() {
-  return array(
-    'change pants status' => array(
-      'title' => t('Change pants status'),
-     ),
-    'administer pants' => array(
-      'title' => t('Administer pants'),
+function pants_settings() {
+  $form['pants_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Pants type'),
+    '#options' => array(
+      '' => t('None (just show on/off status)'),
+      'bellbottoms' => t('Bellbottoms'),
+      'mchammer' => t('MC Hammer'),
     ),
+    '#default_value' => variable_get('pants_type', ''),
+    '#description' => t('Choose pants type to show on the user profile.'),
   );
+
+  return system_settings_form($form);
 }
+
+///// BLOCKS /////
+
+/**
+ * Implements hook_block_info().
+ */
+function pants_block_info() {
+  $blocks['change_pants'] = array(
+    'info' => t('Change pants'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  $blocks['recent_pants'] = array(
+    'info' => t('Recent pants'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function pants_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'change_pants':
+      global $user;
+
+      $block['subject'] = t('Change pants');
+      $block['content'] = array(
+        'status' => array(
+          '#theme' => 'pants_status',
+          '#account' => $user,
+          '#prefix' => '<div id="pants-change-pants-status">',
+          '#suffix' => '</div>',
+        ),
+        'change_link' => array(
+          '#type' => 'link',
+          '#title' => t('Change'),
+          '#href' => "pants/change/{$user->uid}",
+          '#ajax' => array(
+            'wrapper' => 'pants-change-pants-status',
+            'method' => 'html',
+            'effect' => 'fade',
+          ),
+        ),
+      );
+      break;
+    case 'recent_pants':
+      $items = array();
+      $count = variable_get('pants_recent_block_count', 10);
+      $result = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, $count)->fetchAll();
+      foreach ($result as $item) {
+        $items[] = theme('pants_history_item', array('item' => $item));
+      }
+
+      $block['subject'] = t('Recent pants');
+      $block['content'] = array(
+        '#theme' => 'item_list__pants_recent_block',
+        '#items' => $items,
+      );
+      break;
+  }
+
+  return $block;
+}
+
+///// USER PROFILE HOOKS /////
 
 /**
  * Implements hook_form_FORM_ID_alter() for user_profile_form().
@@ -102,6 +208,8 @@ function pants_user_view($account, $view_mode, $langcode) {
     '#markup' => theme('pants_status', array('account' => $account, 'type' => variable_get('pants_type', ''))),
   );
 }
+
+///// THEMING ////
 
 /**
  * Implements hook_theme().
@@ -178,107 +286,7 @@ function theme_pants_history_item($variables) {
   return $output;
 }
 
-/**
- * Implements hook_block_info().
- */
-function pants_block_info() {
-  $blocks['change_pants'] = array(
-    'info' => t('Change pants'),
-    'cache' => DRUPAL_NO_CACHE,
-  );
-  $blocks['recent_pants'] = array(
-    'info' => t('Recent pants'),
-    'cache' => DRUPAL_CACHE_GLOBAL,
-  );
-
-  return $blocks;
-}
-
-/**
- * Implements hook_block_view().
- */
-function pants_block_view($delta = '') {
-  $block = array();
-
-  switch ($delta) {
-    case 'change_pants':
-      global $user;
-
-      $block['subject'] = t('Change pants');
-      $block['content'] = array(
-        'status' => array(
-          '#theme' => 'pants_status',
-          '#account' => $user,
-          '#prefix' => '<div id="pants-change-pants-status">',
-          '#suffix' => '</div>',
-        ),
-        'change_link' => array(
-          '#type' => 'link',
-          '#title' => t('Change'),
-          '#href' => "pants/change/{$user->uid}",
-          '#ajax' => array(
-            'wrapper' => 'pants-change-pants-status',
-            'method' => 'html',
-            'effect' => 'fade',
-          ),
-        ),
-      );
-      break;
-    case 'recent_pants':
-      $items = array();
-      $count = variable_get('pants_recent_block_count', 10);
-      $result = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, $count)->fetchAll();
-      foreach ($result as $item) {
-        $items[] = theme('pants_history_item', array('item' => $item));
-      }
-
-      $block['subject'] = t('Recent pants');
-      $block['content'] = array(
-        '#theme' => 'item_list__pants_recent_block',
-        '#items' => $items,
-      );
-      break;
-  }
-
-  return $block;
-}
-
-/**
- * Page callback for pants/change/%user.
- *
- * @param stdClass $user
- *   A user object.
- */
-function pants_change($account) {
-  $uid = $account->uid;
-  $status = 1 - pants_get($uid);
-  pants_set($uid, $status);
-  return array(
-    '#theme' => 'pants_status',
-    '#account' => $account,
-  );
-}
-
-/**
- * Form builder; The pants settings form.
- */
-function pants_settings() {
-  $form['pants_type'] = array(
-    '#type' => 'radios',
-    '#title' => t('Pants type'),
-    '#options' => array(
-      '' => t('None (just show on/off status)'),
-      'bellbottoms' => t('Bellbottoms'),
-      'mchammer' => t('MC Hammer'),
-    ),
-    '#default_value' => variable_get('pants_type', ''),
-    '#description' => t('Choose pants type to show on the user profile.'),
-  );
-
-  return system_settings_form($form);
-}
-
-///// CRUD FUNCTIONS ////
+///// CRUD ////
 
 /**
  * Returns a user's current pants status.
