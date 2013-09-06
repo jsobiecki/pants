@@ -3,4 +3,5 @@ description = Tracks pants status for users.
 core = 7.x
 files[] = pants.test
 dependencies[] = user
+dependencies[] = ctools
 configure = admin/config/people/pants

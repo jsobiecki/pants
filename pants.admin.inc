@@ -14,12 +14,15 @@ function pants_settings() {
     '#title' => t('Pants type'),
     '#options' => array(
       '' => t('None (just show on/off status)'),
-      'bellbottoms' => t('Bellbottoms'),
-      'mchammer' => t('MC Hammer'),
     ),
     '#default_value' => variable_get('pants_type', ''),
     '#description' => t('Choose pants type to show on the user profile.'),
   );
+
+  ctools_include('plugins');
+  foreach(ctools_get_plugins('pants', 'pants_type') as $pants_type_id => $pants_type_info) {
+    $form['pants_type']['#options'][$pants_type_id] = $pants_type_info['label'];
+  }
 
   return system_settings_form($form);
 }

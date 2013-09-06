@@ -176,6 +176,27 @@ function pants_user_view($account, $view_mode, $langcode) {
   );
 }
 
+///// PLUGIN MANAGEMENT ////
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function pants_ctools_plugin_type() {
+  return array(
+    'pants_type' => array(),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function pants_ctools_plugin_directory($module, $plugin_type) {
+  $directories['pants']['pants_type'] = 'plugins/pants_type';
+  if (isset($directories[$module][$plugin_type])) {
+    return $directories[$module][$plugin_type];
+  }
+}
+
 ///// THEMING ////
 
 /**
@@ -203,27 +224,14 @@ function pants_theme() {
  */
 function template_preprocess_pants_status(&$variables) {
   $status = pants_get($variables['account']->uid);
-  switch ($variables['type']) {
-    case 'mchammer':
-      $image = 'http://nickyscostumes.com.au/images/uploads/hammerpants.jpg';
-      break;
-    case 'bellbottoms':
-      $image = 'http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg';
-      break;
-    default:
-      $image = NULL;
-  }
-
-  if ($status && $image) {
-    $variables['content'] = array(
-      '#theme' => 'image',
-      '#path' => $image,
-    );
+  if ($variables['type']) {
+    ctools_include('plugins');
+    $callback = $status ? 'view_enabled callback' : 'view_disabled callback';
+    $function = ctools_plugin_load_function('pants', 'pants_type', $variables['type'], $callback);
+    $variables['content'] = $function();
   }
   else {
-    $variables['content'] = array(
-      '#markup' => $status ? t('On') : t('Off'),
-    );
+    $variables['content'] = array('#markup' => $status ? t('On') : t('Off'));
   }
 }
 
