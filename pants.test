@@ -95,6 +95,11 @@ class PantsUITestCase extends DrupalWebTestCase {
     $this->drupalPost("user/$uid/edit", $edit, t('Save'));
     $this->drupalGet("user/$uid");
     $this->assertText('On');
+
+    // Set a non-default pants type. Ensure it is shown as an image.
+    variable_set('pants_type', 'bellbottoms');
+    $this->drupalGet("user/$uid");
+    $this->assertRaw('<img src="http://ecx.images-amazon.com/images/I/41xXmNdZn8L._SY200_.jpg"');
   }
 
   /**
