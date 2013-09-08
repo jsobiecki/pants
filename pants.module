@@ -67,10 +67,6 @@ function pants_block_info() {
     'info' => t('Change pants'),
     'cache' => DRUPAL_NO_CACHE,
   );
-  $blocks['recent_pants'] = array(
-    'info' => t('Recent pants'),
-    'cache' => DRUPAL_CACHE_GLOBAL,
-  );
 
   return $blocks;
 }
@@ -104,20 +100,6 @@ function pants_block_view($delta = '') {
             'effect' => 'fade',
           ),
         ),
-      );
-      break;
-    case 'recent_pants':
-      $items = array();
-      $count = variable_get('pants_recent_block_count', 10);
-      $result = db_query_range('SELECT u.uid, u.name, p.status, p.changed, changed_by FROM {pants_history} p INNER JOIN {users} u ON p.uid = u.uid ORDER BY changed DESC', 0, $count)->fetchAll();
-      foreach ($result as $item) {
-        $items[] = theme('pants_history_item', array('item' => $item));
-      }
-
-      $block['subject'] = t('Recent pants');
-      $block['content'] = array(
-        '#theme' => 'item_list__pants_recent_block',
-        '#items' => $items,
       );
       break;
   }
@@ -181,6 +163,17 @@ function pants_ctools_plugin_directory($module, $plugin_type) {
   }
 }
 
+///// VIEWS ////
+
+/**
+ * Implements hook_views_api().
+ */
+function pants_views_api() {
+  return array(
+    'api' => 2,
+  );
+}
+
 ///// THEMING ////
 
 /**
@@ -191,9 +184,6 @@ function pants_theme() {
     'pants_status' => array(
       'variables' => array('pants_status' => 0, 'pants_type' => ''),
       'template' => 'pants-status',
-    ),
-    'pants_history_item' => array(
-      'variables' => array('item' => NULL),
     ),
   );
 }
@@ -218,20 +208,3 @@ function template_preprocess_pants_status(&$variables) {
   }
 }
 
-/**
- * Returns HTML for a history item in the "Recent pants" block.
- *
- * @ingroup themeable
- */
-function theme_pants_history_item($variables) {
-  $item = $variables['item'];
-  $username = theme('username', array('account' => $item));
-  $time = format_interval(time() - $item->changed);
-  if ($item->status) {
-    $output = t('!username put pants on @time ago', array('!username' => $username, '@time' => $time));
-  }
-  else {
-    $output = t('!username took pants off @time ago', array('!username' => $username, '@time' => $time));
-  }
-  return $output;
-}
