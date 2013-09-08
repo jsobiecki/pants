@@ -84,12 +84,13 @@ function pants_block_view($delta = '') {
   switch ($delta) {
     case 'change_pants':
       global $user;
+      $account = user_load($user->uid);
 
       $block['subject'] = t('Change pants');
       $block['content'] = array(
         'status' => array(
           '#theme' => 'pants_status',
-          '#account' => $user,
+          '#pants_status' => !empty($account->pants_status[LANGUAGE_NONE][0]['value']),
           '#prefix' => '<div id="pants-change-pants-status">',
           '#suffix' => '</div>',
         ),
@@ -127,41 +128,22 @@ function pants_block_view($delta = '') {
 ///// USER PROFILE HOOKS /////
 
 /**
- * Implements hook_form_FORM_ID_alter() for user_profile_form().
- */
-function pants_form_user_profile_form_alter(&$form, &$form_state) {
-  if ($form['#user_category'] == 'account' && user_access('change pants status')) {
-    $account = $form_state['user'];
-    $form['pants_status'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Pants'),
-    );
-    $form['pants_status']['pants'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Are you wearing pants?'),
-      '#default_value' => !empty($account->pants) ? 1 : 0,
-    );
-  }
-}
-
-/**
  * Implements hook_user_presave().
  */
 function pants_user_presave(&$edit, $account, $category) {
-  if (isset($edit['pants'])) {
-    pants_set($account->uid, $edit['pants']);
-  }
-}
+  global $user;
 
-/**
- * Implements hook_user_load().
- */
-function pants_user_load($users) {
-  $result = db_query('SELECT uid, status FROM {pants} WHERE uid IN (:uids)', array(
-    ':uids' => array_keys($users),
-  ));
-  foreach ($result as $record) {
-    $users[$record->uid]->pants = $record->status;
+  $original_pants_status = isset($account->original->pants_status[LANGUAGE_NONE][0]['value']) ? $account->original->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
+  $new_pants_status = isset($account->pants_status[LANGUAGE_NONE][0]['value']) ? $account->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
+  if ($new_pants_status !== $original_pants_status) {
+    db_insert('pants_history')
+      ->fields(array(
+        'uid' => $account->uid,
+        'status' => $new_pants_status,
+        'changed' => REQUEST_TIME,
+        'changed_by' => $user->uid,
+      ))
+      ->execute();
   }
 }
 
@@ -169,11 +151,13 @@ function pants_user_load($users) {
  * Implements hook_user_view().
  */
 function pants_user_view($account, $view_mode, $langcode) {
-  $account->content['summary']['pants'] = array(
-    '#type' => 'user_profile_item',
-    '#title' => t('Pants status'),
-    '#markup' => theme('pants_status', array('account' => $account, 'type' => variable_get('pants_type', ''))),
-  );
+  if (isset($account->content['pants_status'])) {
+    $account->content['pants_status'][0] = array(
+      '#theme' => 'pants_status',
+      '#pants_status' => $account->pants_status[LANGUAGE_NONE][0]['value'],
+      '#pants_type' => variable_get('pants_type', ''),
+    );
+  }
 }
 
 ///// PLUGIN MANAGEMENT ////
@@ -205,7 +189,7 @@ function pants_ctools_plugin_directory($module, $plugin_type) {
 function pants_theme() {
   return array(
     'pants_status' => array(
-      'variables' => array('account' => NULL, 'type' => ''),
+      'variables' => array('pants_status' => 0, 'pants_type' => ''),
       'template' => 'pants-status',
     ),
     'pants_history_item' => array(
@@ -219,19 +203,18 @@ function pants_theme() {
  *
  * @param array $variables
  *   An associative array containing:
- *   - account: A user object whose pants status should be displayed.
- *   - type: Type of pants to display (defaults to none).
+ *   - pants_status: 1 if the pants are on. 0 if the pants are off.
+ *   - pants_type: Type of pants to display (defaults to none).
  */
 function template_preprocess_pants_status(&$variables) {
-  $status = pants_get($variables['account']->uid);
-  if ($variables['type']) {
+  if ($variables['pants_type']) {
     ctools_include('plugins');
-    $callback = $status ? 'view_enabled callback' : 'view_disabled callback';
-    $function = ctools_plugin_load_function('pants', 'pants_type', $variables['type'], $callback);
+    $callback = $variables['pants_status'] ? 'view_enabled callback' : 'view_disabled callback';
+    $function = ctools_plugin_load_function('pants', 'pants_type', $variables['pants_type'], $callback);
     $variables['content'] = $function();
   }
   else {
-    $variables['content'] = array('#markup' => $status ? t('On') : t('Off'));
+    $variables['content'] = array('#markup' => $variables['pants_status'] ? t('On') : t('Off'));
   }
 }
 
@@ -252,54 +235,3 @@ function theme_pants_history_item($variables) {
   }
   return $output;
 }
-
-///// CRUD ////
-
-/**
- * Returns a user's current pants status.
- * 
- * @param int $uid
- *   A user's {users}.uid.
- *
- * @return int $status
- *   The user's pants status (1 or 0).
- */
-function pants_get($uid) {
-  $status = db_query('SELECT status FROM {pants} WHERE uid = :uid', array(
-    ':uid' => $uid,
-  ))->fetchField();
-  return $status;
-}
-
-/**
- * Changes the value of a user's pants status.
- *
- * @param int $uid
- *   A user's {users}.uid.
- *
- * @return int $status
- *   A 1 or 0 with which to modify the user's pants status.
- */
-function pants_set($uid, $status) {
-  global $user;
-
-  // Insert or update current row in {pants} table.
-  db_merge('pants')
-    ->key(array('uid' => $uid))
-    ->fields(array(
-      'uid' => $uid,
-      'status' => $status,
-    ))
-    ->execute();
-
-  // Also insert new record into {pants_history}.
-  db_insert('pants_history')
-    ->fields(array(
-      'uid' => $uid,
-      'status' => $status,
-      'changed' => REQUEST_TIME,
-      'changed_by' => $user->uid,
-    ))
-    ->execute();
-}
-
