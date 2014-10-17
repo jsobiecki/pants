@@ -44,35 +44,16 @@ function pants_schema() {
  * Implements hook_install().
  */
 function pants_install() {
-  field_create_field(array(
-    'field_name' => 'pants_status',
-    'type' => 'list_boolean',
-    'settings' => array(
-      'allowed_values' => array(
-        0 => t('Off'),
-        1 => t('On'),
-      ),
-    ),
-    'locked' => TRUE,
-  ));
-  field_create_instance(array(
-    'field_name' => 'pants_status',
-    'entity_type' => 'user',
-    'bundle' => 'user',
-    'label' => t('Pants status'),
-    'widget' => array(
-      'type' => 'options_onoff',
-      'settings' => array(
-        'display_label' => TRUE,
-      ),
-    ),
-  ));
+  $entity_manager = \Drupal::entityManager();
+  $pants_status_definition = $entity_manager->getFieldStorageDefinitions('user')['pants_status'];
+  $entity_manager->onFieldStorageDefinitionCreate($pants_status_definition);
 }
 
 /**
  * Implements hook_uninstall().
  */
 function pants_uninstall() {
-  variable_del('pants_type');
-  field_delete_field('pants_status');
+  $entity_manager = \Drupal::entityManager();
+  $pants_status_definition = $entity_manager->getLastInstalledFieldStorageDefinitions('user')['pants_status'];
+  $entity_manager->onFieldStorageDefinitionDelete($pants_status_definition);
 }

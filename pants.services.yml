@@ -1,0 +1,4 @@
+services:
+  plugin.manager.pants.pants_type:
+    class: Drupal\pants\PantsTypeManager
+    parent: default_plugin_manager

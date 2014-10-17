@@ -5,21 +5,25 @@
  * Allows users to take their pants on and off.
  */
 
-///// PERMISSIONS AND ACCESS /////
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\user\UserInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
+///// PERMISSIONS AND ACCESS /////
 /**
  * Implements hook_permission().
  */
-function pants_permission() {
-  return array(
-    'change pants status' => array(
-      'title' => t('Change pants status'),
-     ),
-    'administer pants' => array(
-      'title' => t('Administer pants'),
-    ),
-  );
-}
+//function pants_permission() {
+//  return array(
+//    'change pants status' => array(
+//      'title' => t('Change pants status'),
+//     ),
+//    'administer pants' => array(
+//      'title' => t('Administer pants'),
+//    ),
+//  );
+//}
 
 /**
  * Access callback: Checks permission to change pants status.
@@ -72,6 +76,27 @@ function pants_block_info() {
 }
 
 /**
+ * Implements hook_entity_base_field_info().
+ */
+function pants_entity_base_field_info(EntityTypeInterface $entity_type) {
+  if ($entity_type->id() === 'user') {
+    $fields['pants_status'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Pants status'))
+      ->setDisplayOptions('form', array(
+        'type' => 'boolean_checkbox',
+        'weight' => 1,
+        'settings' => array(
+          'display_label' => TRUE,
+        ),
+      ))
+      ->setDefaultValue(0);
+
+    return $fields;
+  }
+}
+
+
+/**
  * Implements hook_block_view().
  */
 function pants_block_view($delta = '') {
@@ -107,60 +132,60 @@ function pants_block_view($delta = '') {
   return $block;
 }
 
+
+/**
+ * Implements hook_user_presave().
+ */
+//function pants_user_presave(UserInterface $user) {
+//  $account = \Drupal::currentUser();
+//
+//  if ($user->isNew() || $user->pants_status->value !== $user->original->pants_status->value) {
+//    db_insert('pants_history')
+//      ->fields(array(
+//        'uid' => $user->id(),
+//        'status' => (int) $user->pants_status->value,
+//        'changed' => REQUEST_TIME,
+//        'changed_by' => $account->id(),
+//      ))
+//      ->execute();
+//  }
+//}
+
+
 ///// USER PROFILE HOOKS /////
 
 /**
  * Implements hook_user_presave().
  */
-function pants_user_presave(&$edit, $account, $category) {
-  global $user;
+//function pants_user_presave(&$edit, $account, $category) {
+//  global $user;
+//
+//  $original_pants_status = isset($account->original->pants_status[LANGUAGE_NONE][0]['value']) ? $account->original->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
+//  $new_pants_status = isset($account->pants_status[LANGUAGE_NONE][0]['value']) ? $account->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
+//  if ($new_pants_status !== $original_pants_status) {
+//    db_insert('pants_history')
+//      ->fields(array(
+//        'uid' => $account->uid,
+//        'status' => $new_pants_status,
+//        'changed' => REQUEST_TIME,
+//        'changed_by' => $user->uid,
+//      ))
+//      ->execute();
+//  }
+//}
 
-  $original_pants_status = isset($account->original->pants_status[LANGUAGE_NONE][0]['value']) ? $account->original->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
-  $new_pants_status = isset($account->pants_status[LANGUAGE_NONE][0]['value']) ? $account->pants_status[LANGUAGE_NONE][0]['value'] : NULL;
-  if ($new_pants_status !== $original_pants_status) {
-    db_insert('pants_history')
-      ->fields(array(
-        'uid' => $account->uid,
-        'status' => $new_pants_status,
-        'changed' => REQUEST_TIME,
-        'changed_by' => $user->uid,
-      ))
-      ->execute();
-  }
-}
 
+///// PLUGIN MANAGEMENT ////
 /**
  * Implements hook_user_view().
  */
-function pants_user_view($account, $view_mode, $langcode) {
-  if (isset($account->content['pants_status'])) {
-    $account->content['pants_status'][0] = array(
-      '#theme' => 'pants_status',
-      '#pants_status' => $account->pants_status[LANGUAGE_NONE][0]['value'],
-      '#pants_type' => variable_get('pants_type', ''),
-    );
-  }
-}
-
-///// PLUGIN MANAGEMENT ////
-
-/**
- * Implements hook_ctools_plugin_type().
- */
-function pants_ctools_plugin_type() {
-  return array(
-    'pants_type' => array(),
+function pants_user_view(array &$build, UserInterface $user, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+  $build['pants_status'] = array(
+    '#theme' => 'pants_status',
+    '#pants_status' => $user->pants_status->value,
+    '#pants_type' => \Drupal::config('pants.settings')->get('pants_type'),
   );
-}
-
-/**
- * Implements hook_ctools_plugin_directory().
- */
-function pants_ctools_plugin_directory($module, $plugin_type) {
-  $directories['pants']['pants_type'] = 'plugins/pants_type';
-  if (isset($directories[$module][$plugin_type])) {
-    return $directories[$module][$plugin_type];
-  }
+  //$build['pants_status']['#cache']['tags'][] = 'config:pants.settings';
 }
 
 ///// VIEWS ////
@@ -198,10 +223,9 @@ function pants_theme() {
  */
 function template_preprocess_pants_status(&$variables) {
   if ($variables['pants_type']) {
-    ctools_include('plugins');
-    $callback = $variables['pants_status'] ? 'view_enabled callback' : 'view_disabled callback';
-    $function = ctools_plugin_load_function('pants', 'pants_type', $variables['pants_type'], $callback);
-    $variables['content'] = $function();
+    /** @var \Drupal\pants\PantsTypeInterface $pants_type */
+    $pants_type = \Drupal::service('plugin.manager.pants.pants_type')->createInstance($variables['pants_type']);
+    $variables['content'] = $variables['pants_status'] ? $pants_type->viewPantsOn() : $pants_type->viewPantsOff();
   }
   else {
     $variables['content'] = array('#markup' => $variables['pants_status'] ? t('On') : t('Off'));

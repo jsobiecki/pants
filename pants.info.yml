@@ -1,0 +1,7 @@
+name: Pants
+description: 'Tracks pants status for users. DCwroc2014!'
+core: 8.x
+dependencies:
+  - user
+  - options
+type: module

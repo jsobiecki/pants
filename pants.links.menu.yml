@@ -1,0 +1,5 @@
+pants.settings:
+  route_name: pants.settings
+  title: Pants
+  description: 'Administer pants.'
+  parent: user.admin_index
